@@ -1,74 +1,83 @@
 package com.example.customviewcinemahall
 
-import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
-import com.example.customviewcinemahall.databinding.PlaceBinding
+import com.example.customviewcinemahall.databinding.*
 
 
-class ScreenAdapter(private val list : ArrayList<MutableList<Int>>,
+class ScreenAdapter(private val list : List<MutableList<Int>>,
                     private val placeClickListener: PlaceClickListener)
-    : RecyclerView.Adapter<ScreenAdapter.ScreenVIewHolder>() {
+    :  RecyclerView.Adapter<BaseViewHolder<*,*>>() {
 
+    private val columnSize = list[0].size
 
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScreenVIewHolder {
-         val binding = PlaceBinding.inflate(LayoutInflater.from(parent.context),parent,false)
-        return ScreenVIewHolder(binding)
-    }
-
-
-    override fun onBindViewHolder(holder: ScreenVIewHolder, position: Int) {
-             val row = position / 4
-          val col = position % 4
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BaseViewHolder<*,*>  {
+        return  when(viewType) {
+            ViewTypes.NOTHING.ordinal ->{
+                val binding = PlaceNothingBinding.inflate(LayoutInflater.from(parent.context),parent,false)
+                PlaceNothingViewHolder(binding)
+            }
+            ViewTypes.DEFAULT.ordinal -> {
+                val binding = PlaceDefaultBinding.inflate(LayoutInflater.from(parent.context),parent,false)
+                PlaceDefaultViewHolder(binding)
+            }
+            ViewTypes.SELECTED.ordinal -> {
+                val binding = PlaceSelectedBinding.inflate(LayoutInflater.from(parent.context),parent,false)
+                PlaceSelectedViewHolder(binding)
+            }
+            ViewTypes.BUSY.ordinal ->{
+                val binding = PlaceBusyBinding.inflate(LayoutInflater.from(parent.context),parent,false)
+                PlaceBusyViewHolder(binding)
+            }
+            ViewTypes.ROW.ordinal -> {
+                val binding = RowBinding.inflate(LayoutInflater.from(parent.context),parent,false)
+                RowViewHolder(binding)
+            }
+            else ->  throw IllegalArgumentException("The viewType value of  is not supported")
+        }
+        }
+    override fun onBindViewHolder(holder: BaseViewHolder<*,*>, position: Int) {
+             val row = position / columnSize
+          val col = position % columnSize
         val place = list[row][col]
-        holder.bind(place,position % 4) // TODO: было position % 4 - работало
 
+        when(holder){
+            is PlaceNothingViewHolder ->{
+                    holder.bind(place,col)
+            }
+            is PlaceDefaultViewHolder ->{
+                holder.bind(place,col)
+            }
+            is PlaceSelectedViewHolder ->{
+                holder.bind(place,col)
+            }
+            is PlaceBusyViewHolder ->{
+                holder.bind(place,col)
+            }
+            is RowViewHolder -> {
+                holder.bind(row.inc().toString(),col)
+            }
+        }
+      //  holder.bind(place,position % list[0].size)
         holder.itemView.setOnClickListener {
             placeClickListener.onClick(row,col,place)
         }
        }
 
     override fun getItemViewType(position: Int): Int {
-        return when(list[position/4][position%4]){
-             0  ->  TYPES.NOTHING.ordinal
-             1  ->   TYPES.DEFAULT.ordinal
-             2  ->  TYPES.SELECTED.ordinal
-             else  ->  TYPES.BUSY.ordinal
+        return when(list[position /columnSize ][position % columnSize]){
+             0  ->  ViewTypes.NOTHING.ordinal
+             1  ->   ViewTypes.DEFAULT.ordinal
+             2  ->  ViewTypes.SELECTED.ordinal
+            3 -> ViewTypes.BUSY.ordinal
+            else ->  ViewTypes.ROW.ordinal
         }
     }
 
     override fun getItemCount(): Int {
-        return list.size * list.size
+        return getSize(list)
     }
-
-
-  inner  class ScreenVIewHolder(binding : PlaceBinding)
-        : RecyclerView.ViewHolder(binding.root){
-      private val button =  binding.place
-        fun bind(place:Int,position:Int){
-            when (place) {
-                0 ->{
-                   button.isVisible = false
-                }
-                1 -> {
-                   button.text = position.toString()
-                    button.setBackgroundColor(Color.GRAY)
-                }
-                2-> {
-                   button.text = position.toString()
-                    button.setBackgroundColor(Color.GREEN)
-                }
-                3-> {
-                    button.setBackgroundColor(Color.RED)
-                }
-            }
-
-            println(place)
-    }
-}
 }
 
 private fun getSize(list: List<MutableList<Int>>):Int{
